@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Card — Interactive Showcase</title>
+<style>
+:root{color-scheme:dark;--bg:#050506;--ease:cubic-bezier(.22,.72,.18,1)}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0}body{overflow:hidden;background:var(--bg);font-family:Inter,Arial,Helvetica,sans-serif;color:#fff}
+.stage{position:relative;width:100%;height:100svh;min-height:320px;background:radial-gradient(ellipse at 50% 48%,#0b0b10 0,#050506 52%,#030304 100%);display:grid;place-items:center;isolation:isolate}
+.stage:after{content:"";position:absolute;inset:0;pointer-events:none;border:1px solid rgba(255,255,255,.035)}
+.top-label{position:absolute;top:22px;left:24px;border:1px solid rgba(255,255,255,.17);border-radius:30px;padding:5px 10px;font-size:9px;letter-spacing:.04em;color:#e6e6eb;background:rgba(255,255,255,.025)}
+.close{position:absolute;right:24px;top:17px;width:25px;height:25px;border:1px solid rgba(255,255,255,.18);border-radius:50%;display:grid;place-items:center;color:#aaa;background:transparent;font-size:15px;line-height:1;cursor:pointer;transition:.25s}
+.close:hover{color:#fff;border-color:#777;transform:rotate(90deg)}
+.footer{position:absolute;left:35px;bottom:17px;font-size:10px;color:#a4a4a9;letter-spacing:-.01em}
+.cards{width:min(68.5vw,660px);height:min(82vh,286px);min-height:220px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
+.card{--accent:#7c43ff;--upper:#7344ed;--lower:#15104a;position:relative;overflow:hidden;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:var(--lower);isolation:isolate;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.35);transition:border-color .45s,box-shadow .6s,transform .6s var(--ease)}
+.card[data-card="2"]{--accent:#f08b81;--upper:#d77b79;--lower:#e5e5e5;color:#111}
+.card[data-card="3"]{--accent:#91a9c5;--upper:#a9bfd5;--lower:#10141e}
+.card:hover,.card.active{border-color:rgba(255,255,255,.34);box-shadow:0 14px 42px rgba(0,0,0,.5),0 0 22px color-mix(in srgb,var(--accent) 14%,transparent)}
+.visual{position:absolute;inset:0 0 auto;height:39%;background:linear-gradient(135deg,var(--upper),color-mix(in srgb,var(--upper) 60%,#fff));transition:height .72s var(--ease),filter .7s;overflow:hidden}
+.card[data-card="1"] .visual{background:radial-gradient(ellipse at 35% 15%,#aa75ff 0,#7444e9 43%,#39208c 100%)}
+.card[data-card="2"] .visual{background:radial-gradient(ellipse at 70% 0%,#f6a49b 0,#dc7777 48%,#b74c65 100%)}
+.card[data-card="3"] .visual{background:linear-gradient(135deg,#d8e4ef 0,#a8bed3 50%,#718ca9 100%)}
+.card.active .visual{height:64%;filter:saturate(1.08)}
+.visual:after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.12),transparent 42%,rgba(0,0,0,.08));pointer-events:none}
+/* The lower panel has the characteristic stepped shoulder that meets the upper visual. */
+.lower{position:absolute;inset:39% 0 0;background:var(--lower);border-radius:0;transition:top .72s var(--ease),border-radius .72s var(--ease);}
+.card.active .lower{top:64%;}
+.card[data-card="1"] .lower{background:linear-gradient(155deg,#21146b,#100d3b 75%)}
+.card[data-card="2"] .lower{background:linear-gradient(160deg,#f0f0f0,#d9d9dc)}
+.card[data-card="3"] .lower{background:linear-gradient(160deg,#151a27,#090c13)}
+/* stepped notch cutout */
+.lower:before{content:"";position:absolute;left:0;top:-13px;width:36%;height:14px;background:var(--lower);border-radius:0 10px 0 0;transition:top .72s var(--ease)}
+.card[data-card="1"] .lower:before{background:#21146b}
+.card[data-card="2"] .lower:before{background:#f0f0f0}
+.card[data-card="3"] .lower:before{background:#151a27}
+.number{position:absolute;z-index:4;left:9%;top:23%;font-size:clamp(22px,2.45vw,34px);font-weight:650;line-height:1;letter-spacing:-.055em;color:#f7f7fb;transition:top .72s var(--ease),color .3s}
+.card[data-card="2"] .number{color:#101014}
+.card.active .number{top:59%}
+.arrow{position:absolute;z-index:5;right:9%;top:24%;font-size:10px;opacity:.78;transition:top .72s var(--ease),transform .4s}
+.card.active .arrow{top:61%;transform:translateX(2px)}
+.copy{position:absolute;z-index:5;left:9%;right:8%;bottom:9%;transition:bottom .72s var(--ease)}
+.heading{font-size:clamp(7px,.72vw,10px);font-weight:600;letter-spacing:-.025em;margin-bottom:7px;white-space:nowrap}
+.description{font-size:clamp(6px,.58vw,8px);line-height:1.45;opacity:.55;max-width:95%;font-weight:400}
+.card[data-card="2"] .description{color:#38383d;opacity:.65}
+.product{position:absolute;z-index:3;left:50%;top:28%;width:94%;height:43%;transform:translate(-50%,-44%) scale(.76);opacity:0;pointer-events:none;filter:drop-shadow(0 12px 10px rgba(0,0,0,.28));transition:opacity .4s,transform .72s var(--ease)}
+.card.active .product{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.product svg{width:100%;height:100%;overflow:visible}
+.card[data-card="2"] .product{top:29%;width:105%;height:47%}
+.card[data-card="3"] .product{top:29%;width:110%;height:45%}
+@media(max-width:650px){body{overflow:auto}.stage{min-height:100svh;height:auto;padding:100px 18px 85px}.cards{width:min(100%,360px);height:auto;min-height:0;grid-template-columns:1fr;gap:14px}.card{height:230px}.top-label{top:20px;left:18px}.close{right:18px;top:17px}.footer{left:19px;bottom:22px}.number{font-size:32px}.heading{font-size:10px}.description{font-size:8px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<main class="stage" aria-label="Interactive card showcase">
+  <div class="top-label">CARD</div>
+  <button class="close" aria-label="Close showcase" title="Close">×</button>
+  <section class="cards" aria-label="Three interactive cards">
+    <article class="card" data-card="1" tabindex="0" aria-label="Built for speed">
+      <div class="visual"></div><div class="lower"></div>
+      <div class="product" aria-hidden="true"><svg viewBox="0 0 220 150" fill="none"><defs><linearGradient id="p1a" x1="40" y1="15" x2="175" y2="135" gradientUnits="userSpaceOnUse"><stop stop-color="#F3E8FF"/><stop offset=".28" stop-color="#A78BFA"/><stop offset=".62" stop-color="#5634D6"/><stop offset="1" stop-color="#171044"/></linearGradient><linearGradient id="p1b" x1="70" y1="120" x2="165" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#25105F"/><stop offset=".5" stop-color="#BBA5FF"/><stop offset="1" stop-color="#5D45D9"/></linearGradient></defs><path d="M34 112 105 30l75-15-46 76-54 41-46-20Z" fill="url(#p1a)" stroke="#D8CBFF" stroke-width="2"/><path d="m105 30 29 61 46-76-75 15Z" fill="url(#p1b)" stroke="#E5D9FF" stroke-width="1.5"/><path d="m34 112 46 20 54-41-29-61-71 82Z" fill="#5C43C7" fill-opacity=".8" stroke="#BDAAFF" stroke-width="1.5"/><path d="m80 132 19-42 35 1-54 41Z" fill="#D9CEFF" fill-opacity=".55"/><path d="m105 30 29 61 46-76" stroke="white" stroke-opacity=".75" stroke-width="2"/><path d="m34 112 71-82" stroke="white" stroke-opacity=".5" stroke-width="1.5"/><ellipse cx="105" cy="137" rx="66" ry="7" fill="#09051F" fill-opacity=".4"/></svg></div>
+      <div class="number">01</div><div class="arrow">↗</div>
+      <div class="copy"><div class="heading">Built for speed</div><div class="description">Every interaction responds<br>before you notice the wait.</div></div>
+    </article>
+    <article class="card" data-card="2" tabindex="0" aria-label="Made to bend">
+      <div class="visual"></div><div class="lower"></div>
+      <div class="product" aria-hidden="true"><svg viewBox="0 0 220 150" fill="none"><defs><linearGradient id="b1" x1="40" y1="20" x2="105" y2="140" gradientUnits="userSpaceOnUse"><stop stop-color="#F6C18B"/><stop offset=".45" stop-color="#9A4C2E"/><stop offset="1" stop-color="#351A20"/></linearGradient><linearGradient id="b2" x1="115" y1="20" x2="195" y2="130" gradientUnits="userSpaceOnUse"><stop stop-color="#E9A66D"/><stop offset=".5" stop-color="#7C342D"/><stop offset="1" stop-color="#32151E"/></linearGradient></defs><path d="M34 24 103 12l7 111-69 15-7-114Z" fill="url(#b1)" stroke="#F1C99D" stroke-width="2"/><path d="m110 12 76 16-5 111-71-16V12Z" fill="url(#b2)" stroke="#EFC18E" stroke-width="2"/><path d="m44 33 54-10 5 91-54 11-5-92Z" stroke="#F6D2A7" stroke-opacity=".7" stroke-width="2"/><path d="m120 24 55 12-4 90-52-12 1-90Z" stroke="#F4C69A" stroke-opacity=".7" stroke-width="2"/><path d="M109 14v108" stroke="#24131B" stroke-width="5"/><path d="m55 45 39-7m-37 16 39-7m-37 16 39-7m-37 16 39-7" stroke="#F5D4AE" stroke-opacity=".25" stroke-width="2"/><path d="m128 39 38 9m-38 8 38 9m-39 8 38 9" stroke="#F5D4AE" stroke-opacity=".2" stroke-width="2"/><ellipse cx="111" cy="139" rx="75" ry="6" fill="#3C1B20" fill-opacity=".35"/></svg></div>
+      <div class="number">02</div><div class="arrow">↗</div>
+      <div class="copy"><div class="heading">Made to bend</div><div class="description">Reshape the everyday with<br>materials that move with you.</div></div>
+    </article>
+    <article class="card" data-card="3" tabindex="0" aria-label="Room to grow">
+      <div class="visual"></div><div class="lower"></div>
+      <div class="product" aria-hidden="true"><svg viewBox="0 0 220 150" fill="none"><defs><linearGradient id="s1" x1="30" y1="30" x2="180" y2="115" gradientUnits="userSpaceOnUse"><stop stop-color="#F0F7FF"/><stop offset=".25" stop-color="#8EAAC7"/><stop offset=".55" stop-color="#345578"/><stop offset="1" stop-color="#101D32"/></linearGradient><linearGradient id="s2" x1="40" y1="0" x2="170" y2="120" gradientUnits="userSpaceOnUse"><stop stop-color="#DCEBFA"/><stop offset=".45" stop-color="#52769B"/><stop offset="1" stop-color="#14263D"/></linearGradient></defs><path d="M24 50c35-36 112-41 164-13-19 31-70 49-125 43-20-2-33-11-39-30Z" fill="url(#s1)" stroke="#D5E7F8" stroke-width="2"/><path d="M31 80c36-34 110-35 160-7-22 30-73 45-126 37-18-3-29-13-34-30Z" fill="url(#s2)" stroke="#AFC9E2" stroke-width="2"/><path d="M46 109c34-25 93-26 135-4-22 25-65 34-107 27-14-2-24-10-28-23Z" fill="url(#s1)" stroke="#9BB8D5" stroke-width="2"/><path d="M38 53c35-18 91-20 133-5M44 83c37-17 92-17 132-4M55 111c34-12 78-12 112-2" stroke="white" stroke-opacity=".55" stroke-width="2"/><ellipse cx="111" cy="140" rx="72" ry="6" fill="#020812" fill-opacity=".5"/></svg></div>
+      <div class="number">03</div><div class="arrow">↗</div>
+      <div class="copy"><div class="heading">Room to grow</div><div class="description">Start small and scale without<br>ever losing a feeling of ease.</div></div>
+    </article>
+  </section>
+  <div class="footer">Personal &amp; client use</div>
+</main>
+<script>
+const cards=[...document.querySelectorAll('.card')];
+function activate(card){cards.forEach(item=>{const on=item===card;item.classList.toggle('active',on);item.setAttribute('aria-pressed',String(on));});}
+cards.forEach(card=>{
+  card.addEventListener('pointerenter',()=>activate(card));
+  card.addEventListener('focus',()=>activate(card));
+  card.addEventListener('click',()=>activate(card));
+  card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();activate(card)} if(e.key==='Escape'){cards.forEach(c=>c.classList.remove('active'));}});
+});
+document.querySelector('.close').addEventListener('click',()=>{cards.forEach(c=>c.classList.remove('active'));});
+// Touch users can tap cards; desktop starts in the same quiet resting state as the reference.
+</script>
+</body>
+</html>
