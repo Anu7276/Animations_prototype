@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Flower Stack Carousel</title>
+<style>
+:root{--w:min(280px,54vw)}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{font-family:Inter,system-ui,sans-serif;background:linear-gradient(180deg,#f8f8f8 0%,#f1f1f1 42%,#8d8e92 72%,#3b3c40 100%);overflow:hidden;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.stage{height:100%;display:flex;align-items:center;justify-content:center}
+.scene{position:relative;width:100%;height:calc(var(--w)*1.5);perspective:1200px;cursor:grab;touch-action:pan-y;user-select:none}
+.scene.drag{cursor:grabbing}
+.card{position:absolute;left:50%;top:50%;width:var(--w);height:calc(var(--w)*1.2);margin:calc(var(--w)*-0.6) 0 0 calc(var(--w)*-0.5);border-radius:14px;overflow:hidden;box-shadow:0 18px 36px -14px rgba(0,0,0,.4);will-change:transform,opacity,filter}
+.card>.media{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+</style>
+</head>
+<body>
+<main class="stage"><div class="scene" id="scene" aria-roledescription="carousel"></div></main>
+<script>
+/* Swap `src` for your own image/video URL (or data: URI). Empty = gradient placeholder. */
+const sky="#7db4ea";
+const ITEMS=[
+  {src:"",bg:`radial-gradient(circle at 50% 55%,#1c2a5a 0 7%,#f4f6fa 8% 34%,#aab4c8 56%,transparent 57%),linear-gradient(#9fb0c9,#6f7f99)`},
+  {src:"",bg:`radial-gradient(circle at 35% 62%,#f0735a 0 28%,transparent 29%),radial-gradient(circle at 72% 40%,#f2c642 0 18%,transparent 19%),linear-gradient(${sky},#3f7fc4)`},
+  {src:"",bg:`radial-gradient(circle at 45% 50%,#f7e27a 0 30%,transparent 31%),radial-gradient(circle at 78% 70%,#e9a43c 0 14%,transparent 15%),linear-gradient(${sky},#5a8fc0)`},
+  {src:"",bg:`radial-gradient(circle at 50% 58%,#f4eaa0 0 36%,transparent 37%),linear-gradient(#8fb3d4,#586f86)`},
+  {src:"",bg:`radial-gradient(circle at 50% 38%,#f2c2a0 0 28%,transparent 29%),linear-gradient(${sky},#8fa9bd)`},
+  {src:"",bg:`radial-gradient(circle at 50% 45%,#f6d8e0 0 30%,transparent 31%),linear-gradient(#b7cfe6,#8a9fb3)`},
+  {src:"",bg:`radial-gradient(circle at 40% 55%,#fff 0 26%,transparent 27%),radial-gradient(circle at 70% 35%,#f7d36a 0 12%,transparent 13%),linear-gradient(#a8c4de,#6a86a3)`},
+  {src:"",bg:`radial-gradient(circle at 55% 52%,#f08a6a 0 30%,transparent 31%),linear-gradient(${sky},#4a82b8)`}
+];
+const SPEED=0.18; /* cards per second — lower = slower */
+const scene=document.getElementById('scene'),N=ITEMS.length;
+let pos=0,paused=false,dragging=false,moved=false,startX=0,startPos=0,tw=null,last=performance.now();
+const cards=ITEMS.map((it,i)=>{
+  const c=document.createElement('div');c.className='card';c.style.background=it.bg;
+  if(it.src){
+    const v=/\.(mp4|webm)(\?|$)/i.test(it.src),m=document.createElement(v?'video':'img');m.className='media';m.src=it.src;
+    if(v){m.muted=m.loop=m.autoplay=m.playsInline=true}
+    c.appendChild(m);
+  }
+  c.addEventListener('click',()=>{if(!moved)tweenTo(i)});
+  scene.appendChild(c);return c;
+});
+const off=(i,p)=>{let d=((i-p)%N+N)%N;return d>N/2?d-N:d};
+function render(){
+  const w=cards[0].offsetWidth;
+  cards.forEach((c,i)=>{
+    const d=off(i,pos),a=Math.abs(d),s=Math.sign(d);
+    const x=s*(Math.min(a,1)*w*0.62+Math.max(a-1,0)*w*0.38);
+    const rot=-s*Math.min(a,1)*30;
+    c.style.transform=`translate3d(${x}px,0,${-Math.min(a,4)*70}px) rotateY(${rot}deg) scale(${1-Math.min(a,4)*0.05})`;
+    c.style.opacity=Math.max(0,1-Math.max(a-0.6,0)*0.3);
+    c.style.filter=`blur(${Math.min(a,3)*1.1}px)`;
+    c.style.zIndex=100-Math.round(a*10);
+    c.style.pointerEvents=a>3.5?'none':'auto';
+  });
+}
+function tweenTo(i){const d=off(i,pos);tw={from:pos,to:pos+d,t0:performance.now(),dur:1500}}
+function tick(now){
+  const dt=now-last;last=now;
+  if(!dragging){
+    if(tw){const p=Math.min((now-tw.t0)/tw.dur,1);pos=tw.from+(tw.to-tw.from)*(1-Math.pow(1-p,3));if(p>=1)tw=null}
+    else if(!paused)pos+=SPEED*dt/1000;
+  }
+  render();requestAnimationFrame(tick);
+}
+scene.addEventListener('pointerdown',e=>{dragging=true;moved=false;tw=null;startX=e.clientX;startPos=pos;scene.classList.add('drag');scene.setPointerCapture(e.pointerId)});
+scene.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-startX;if(Math.abs(dx)>5)moved=true;pos=startPos-dx/(cards[0].offsetWidth*0.5)});
+function end(){if(!dragging)return;dragging=false;scene.classList.remove('drag');setTimeout(()=>moved=false,0)}
+scene.addEventListener('pointerup',end);scene.addEventListener('pointercancel',end);
+scene.addEventListener('mouseenter',()=>paused=true);scene.addEventListener('mouseleave',()=>paused=false);
+addEventListener('keydown',e=>{if(e.key==='ArrowRight')tweenTo(Math.round(pos)+1);if(e.key==='ArrowLeft')tweenTo(Math.round(pos)-1)});
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
